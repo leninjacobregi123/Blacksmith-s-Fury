@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI NPC Chat Simulator (Fully Local)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chat-bubble { max-width: 75%; }
+        .chat-bubble.user { background-color: #3B82F6; color: white; align-self: flex-end; }
+        .chat-bubble.npc { background-color: #E5E7EB; color: #1F2937; align-self: flex-start; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-4xl h-[90vh] bg-gray-800 rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden">
+
+        <!-- Left Panel: NPC Portrait and Status -->
+        <div class="w-full md:w-1/3 bg-gray-900 p-6 flex flex-col items-center justify-start border-b md:border-b-0 md:border-r border-gray-700">
+            <h2 class="text-2xl font-bold mb-4">Borgakh</h2>
+            <div id="npc-portrait-container" class="w-48 h-48 rounded-full bg-gray-700 mb-4 flex items-center justify-center overflow-hidden border-4 border-gray-600 transition-all duration-500">
+                <img id="npc-portrait" src="https://placehold.co/192x192/10B981/FFFFFF?text=CALM" alt="NPC Portrait" class="w-full h-full object-cover">
+            </div>
+            <div id="npc-status" class="text-center">
+                <p class="text-lg font-semibold text-gray-300">Current State:</p>
+                <p id="fsm-state-text" class="text-2xl font-bold text-green-400 transition-colors duration-500">CALM</p>
+            </div>
+             <div class="w-full mt-6 text-sm text-gray-400">
+                <p class="font-semibold mb-1">Emotional State (VAD):</p>
+                <p>V: <span id="valence-val">0.00</span> | A: <span id="arousal-val">0.00</span> | D: <span id="dominance-val">0.00</span></p>
+            </div>
+        </div>
+
+        <!-- Right Panel: Chat Interface -->
+        <div class="flex-1 flex flex-col bg-gray-800">
+            <div id="chat-log" class="flex-1 p-6 space-y-4 overflow-y-auto flex flex-col">
+                <!-- Chat messages will be appended here -->
+            </div>
+            <div id="input-area" class="p-4 bg-gray-900 border-t border-gray-700">
+                <form id="chat-form" class="flex items-center space-x-4">
+                    <input type="text" id="user-input" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Type your message..." autocomplete="off">
+                    <button type="submit" id="send-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center">
+                        <span id="send-text">Send</span>
+                        <div id="send-loader" class="hidden">
+                            <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 V12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        </div>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+<script>
+const SERVER_URL = 'http://127.0.0.1:5000';
+let lastFsmState = 'CALM';
+
+function updateNpcImage(fsmState) {
+    if (fsmState === lastFsmState) return;
+    lastFsmState = fsmState;
+
+    const npcPortrait = document.getElementById('npc-portrait');
+    let imageUrl = '';
+    // High-contrast placeholders.
+    switch(fsmState) {
+        case 'IRRITATED':
+            imageUrl = 'https://placehold.co/192x192/FBBF24/1F2937?text=IRRITATED';
+            break;
+        case 'ANGRY':
+            imageUrl = 'https://placehold.co/192x192/F97316/FFFFFF?text=ANGRY';
+            break;
+        case 'RAGEFUL':
+            imageUrl = 'https://placehold.co/192x192/EF4444/FFFFFF?text=RAGEFUL';
+            break;
+        default: // CALM
+            imageUrl = 'https://placehold.co/192x192/10B981/FFFFFF?text=CALM';
+    }
+    npcPortrait.src = imageUrl;
+}
+
+const chatLog = document.getElementById('chat-log');
+const chatForm = document.getElementById('chat-form');
+const userInput = document.getElementById('user-input');
+const sendButton = document.getElementById('send-button');
+const sendText = document.getElementById('send-text');
+const sendLoader = document.getElementById('send-loader');
+
+function addMessageToLog(sender, message) {
+    const bubble = document.createElement('div');
+    bubble.classList.add('chat-bubble', 'rounded-lg', 'px-4', 'py-2', 'shadow');
+    bubble.textContent = message;
+    if (sender === 'user') { bubble.classList.add('user'); }
+    else { bubble.classList.add('npc'); }
+    chatLog.appendChild(bubble);
+    chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+function updateUi(npcState) {
+    document.getElementById('valence-val').textContent = npcState.valence.toFixed(2);
+    document.getElementById('arousal-val').textContent = npcState.arousal.toFixed(2);
+    document.getElementById('dominance-val').textContent = npcState.dominance.toFixed(2);
+    const fsmText = document.getElementById('fsm-state-text');
+    fsmText.textContent = npcState.fsm_state;
+    fsmText.className = 'text-2xl font-bold transition-colors duration-500 ';
+    switch(npcState.fsm_state) {
+        case 'CALM': fsmText.classList.add('text-green-400'); break;
+        case 'IRRITATED': fsmText.classList.add('text-yellow-400'); break;
+        case 'ANGRY': fsmText.classList.add('text-orange-400'); break;
+        case 'RAGEFUL': fsmText.classList.add('text-red-500'); break;
+    }
+    updateNpcImage(npcState.fsm_state);
+}
+
+function toggleLoading(isLoading) {
+    userInput.disabled = isLoading;
+    sendButton.disabled = isLoading;
+    sendText.classList.toggle('hidden', isLoading);
+    sendLoader.classList.toggle('hidden', !isLoading);
+    if (!isLoading) userInput.focus();
+}
+
+chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const message = userInput.value.trim();
+    if (!message) return;
+    addMessageToLog('user', message);
+    userInput.value = '';
+    toggleLoading(true);
+    try {
+        const response = await fetch(`${SERVER_URL}/interact`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: message })
+        });
+        if (!response.ok) throw new Error(`Server Error: ${response.statusText} (${response.status})`);
+        const npcState = await response.json();
+        setTimeout(() => {
+            addMessageToLog('npc', npcState.dialogue);
+            updateUi(npcState);
+            toggleLoading(false);
+        }, 500);
+    } catch (error) {
+        console.error("Failed to interact with server:", error);
+        addMessageToLog('npc', "Sorry, I'm having trouble thinking right now. (Server Error)");
+        toggleLoading(false);
+    }
+});
+
+window.addEventListener('load', async () => {
+    try {
+        const response = await fetch(`${SERVER_URL}/reset`, { method: 'POST' });
+        const initialState = await response.json();
+        addMessageToLog('npc', "Welcome to my forge. What do you want?");
+        updateUi({ fsm_state: initialState.fsm_state, valence: 0, arousal: 0, dominance: 0 });
+    } catch (error) {
+        console.error("Could not connect to the backend server:", error);
+        let errorMsg = "ERROR: Could not connect to the NPC's brain. Is the Python server running?";
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+            errorMsg += " This might be a CORS issue or the server address is incorrect."
+        }
+        addMessageToLog('npc', errorMsg);
+        document.getElementById('fsm-state-text').textContent = 'OFFLINE';
+        document.getElementById('fsm-state-text').classList.add('text-red-500');
+    }
+});
+
+</script>
+</body>
+</html>
+
