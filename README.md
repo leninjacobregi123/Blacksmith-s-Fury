@@ -5,8 +5,9 @@ Welcome to Blacksmith's Fury, an interactive web-based chat simulator featuring 
 This project was inspired by the concepts outlined in the academic paper, "De Ira Machinae: A Computational Architecture for an Anger-Driven Artificial Agent."
 
 <!-- Replace with a real screenshot URL after you upload one -->
-![Blacksmith's Fury Screenshot](https://via.placeholder.com/600x400.png?text=Blacksmith%27s+Fury+Sc
+![Blacksmith's Fury Screenshot]
 reenshot)
+<img width="1920" height="932" alt="output" src="https://github.com/user-attachments/assets/69c09d31-66f0-4b6d-bc91-6f568c980177" />
 
 ## Core Features
 
