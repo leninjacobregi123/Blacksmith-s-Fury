@@ -5,7 +5,8 @@ Welcome to Blacksmith's Fury, an interactive web-based chat simulator featuring 
 This project was inspired by the concepts outlined in the academic paper, "De Ira Machinae: A Computational Architecture for an Anger-Driven Artificial Agent."
 
 <!-- Replace with a real screenshot URL after you upload one -->
-![Blacksmith's Fury Screenshot](https://via.placeholder.com/600x400.png?text=Blacksmith%27s+Fury+Screenshot)
+![Blacksmith's Fury Screenshot](https://via.placeholder.com/600x400.png?text=Blacksmith%27s+Fury+Sc<img width="1228" height="1400" alt="architectural_diagram" src="https://github.com/user-attachments/assets/78b13886-935b-4a63-b94c-5560265f69f6" />
+reenshot)
 
 ## Core Features
 
@@ -36,7 +37,8 @@ This entire application is designed to run on your local machine without needing
 The AI is built on a "three-brain" model where different components handle specific tasks in a pipeline.
 
 <!-- Replace with a real flowchart image URL -->
-![AI Architecture Flowchart](https://via.placeholder.com/600x300.png?text=AI+Architecture+Flowchart)
+![AI Architecture Flowchart]
+<img width="1228" height="1400" alt="architectural_diagram" src="https://github.com/user-attachments/assets/78b13886-935b-4a63-b94c-5560265f69f6" />
 
 ### The Language Brain (Ollama - llama3.2)
 
